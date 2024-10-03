@@ -1,6 +1,6 @@
 import pytest
 
-from dfmt import reformat, split_regions, get_prefix
+from dfmt import reformat, split_regions, get_prefix, process_multiline_comments, preserve_line_breaks
 
 
 def test_get_prefix():
@@ -230,3 +230,71 @@ def test_quoting_nested():
     actual = reformat(text, width=50)
     if actual != expected:
         pytest.fail(actual)
+
+# New testcase for multiline_comment
+def test_process_multiline_comments():
+    """
+    This test ensures that the process_multiline_comments function 
+    correctly preserves multiline comments in the input text.
+    
+    Input:
+    - A string containing multiple multiline comments.
+    
+    Expected Output:
+    - The multiline comments should remain unchanged after processing.
+    """
+    text = """\
+\"\"\" 
+This is a multiline comment.
+It should be preserved.
+\"\"\" 
+print("Hello, World!")
+\"\"\" 
+Another comment.
+\"\"\" 
+"""
+    expected = """\
+\"\"\" 
+This is a multiline comment.
+It should be preserved.
+\"\"\" 
+print("Hello, World!")
+\"\"\" 
+Another comment.
+\"\"\" 
+"""
+    actual = process_multiline_comments(text)
+    
+    # If the processed text does not match the expected output, fail the test
+    if actual != expected:
+        pytest.fail(f"Expected:\n{expected}\nActual:\n{actual}")
+
+
+# New testcase for line breaks
+def test_preserve_line_breaks():
+    """
+    This test checks that the preserve_line_breaks function 
+    correctly retains line breaks in the input text.
+    
+    Input:
+    - A string containing multiple lines, with blank lines in between.
+    
+    Expected Output:
+    - Line breaks should be preserved with spaces added after each line break.
+    """
+    text = """\
+Line 1.
+Line 2.
+
+Line 4 after a blank line.
+"""
+    expected = """\
+Line 1. 
+Line 2. 
+
+Line 4 after a blank line. 
+"""
+    actual = preserve_line_breaks(text)
+    
+    # Assert that the actual output matches the expected output
+    assert actual == expected, f"Expected:\n{expected}\nActual:\n{actual}"
