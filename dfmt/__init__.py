@@ -5,28 +5,26 @@ import sys
 import textwrap
 
 SIMPLE_PREFIX_RE = r"""
-	(\s*) # Some blanks, then either:
-	(
-	  \#  # Pound comments
-	  |
-	  //  # C-style comments
-	  |
-	  /// # Rust doc comments
-	  |
-	  //! # Doxygen
-	  |
-	  \*  # Bullet point (star)
-	  |
-	  -   # Bullet point (dash)
+    (\s*) # Some blanks, then either:
+    (
+      \#  # Pound comments
+      |
+      //  # C-style comments
+      |
+      /// # Rust doc comments
+      |
+      //! # Doxygen
+      |
+      \*  # Bullet point (star)
+      |
+      -   # Bullet point (dash)
     )?
-	[ \t]   # Exactly one space or tab
+    [ \t]   # Exactly one space or tab
 """
-
 
 BLOCKQUOTE_RE = r"\s*(>\s*)+\s+"
 
 FULL_RE = re.compile(f"{BLOCKQUOTE_RE}|{SIMPLE_PREFIX_RE}", re.VERBOSE)
-
 
 def get_prefix(text):
     match = FULL_RE.match(text)
@@ -35,21 +33,17 @@ def get_prefix(text):
     else:
         return match.group()
 
-
 def is_blank(line):
     return all(x == " " for x in line[:-1])
-
 
 @dataclass
 class Region:
     text: str
     prefix: str
 
-
 def split_regions(text):
     res = []
     current_prefix = None
-    current_text = ""
     current_region = None
     for line in text.splitlines(keepends=False):
         prefix = get_prefix(line)
@@ -61,6 +55,49 @@ def split_regions(text):
             current_region.text += line + "\n"
     return res
 
+def process_multiline_comments(text):
+    """Process and retain multi-line comments.
+
+    Args:
+        text (str): The input text potentially containing multi-line comments.
+
+    Returns:
+        str: The text with multi-line comments preserved.
+    """
+    lines = text.splitlines(keepends=True)
+    in_multiline_comment = False
+    processed_text = ""
+
+    for line in lines:
+        if line.strip().startswith('"""'):
+            in_multiline_comment = not in_multiline_comment
+            processed_text += line
+        elif in_multiline_comment:
+            processed_text += line
+        else:
+            processed_text += line
+
+    return processed_text
+
+def preserve_line_breaks(text):
+    """Ensure that line breaks are preserved during the formatting process.
+
+    Args:
+        text (str): The input text with potential line breaks.
+
+    Returns:
+        str: The text with line breaks preserved.
+    """
+
+    lines = text.splitlines(keepends=True)
+    result = []
+    
+    for line in lines:
+        if line.strip():  
+            result.append(line.rstrip() + " \n")  # Add space and newline after non-empty line
+        else:
+            result.append(line)  
+    return ''.join(result)
 
 def reformat_region(region, *, width):
     text = region.text
@@ -78,7 +115,6 @@ def reformat_region(region, *, width):
         res += prefix + line + "\n"
     return res
 
-
 def reformat(text, *, width=80):
     if text in ("", "\n"):
         return "\n"
@@ -87,7 +123,6 @@ def reformat(text, *, width=80):
     for region in regions:
         res += reformat_region(region, width=width)
     return res
-
 
 def main():
     parser = argparse.ArgumentParser()
